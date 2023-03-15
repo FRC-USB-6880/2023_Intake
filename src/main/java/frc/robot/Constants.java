@@ -38,7 +38,7 @@ public final class Constants {
     public static final double kVelocityFactor = Units.rotationsPerMinuteToRadiansPerSecond(kArmGearRatio);
     public static final double kArmFreeSpeed = 5676.0 * kVelocityFactor;
     public static final double kArmUpSpeed = 0.7;
-    public static final double kArmDownSpeed = 0.3;
+    public static final double kArmDownSpeed = -0.3;
     public static final double kArmLowerLimitDeg = 45; // in degrees; 0 degres => competely folded
     public static final double kArmUpperLimitDeg = 300;  // in degrees; 0 degres => competely folded
     // Convert the above degrees values to # of Radians
@@ -56,9 +56,9 @@ public final class Constants {
     public static final double kCurrentWhenConeIsGrabbed = 20;
     public static final double kCurrentWhenCubeIsGrabbed = 20;
     public static final double kConeGrabSpeed = 0.9;
-    public static final double kConeReleaseSpeed = 0.5;
+    public static final double kConeReleaseSpeed = -0.5;
     public static final double kCubeGrabSpeed = 0.8;
-    public static final double kCubeReleaseSpeed = 0.5;
+    public static final double kCubeReleaseSpeed = -0.5;
 
   }
   public static class OperatorConstants {
