@@ -11,6 +11,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import frc.robot.Constants.CAN_IDs;
 import frc.robot.Constants.IntakeWheelsConstants;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -25,6 +26,7 @@ public class IntakeWheels extends SubsystemBase {
     m_motor.setSmartCurrentLimit(IntakeWheelsConstants.kCurrentLimit);
     m_encoder = m_motor.getEncoder();
 
+    SmartDashboard.putData(this);
   }
 
   @Override

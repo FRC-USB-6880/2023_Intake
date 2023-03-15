@@ -30,6 +30,7 @@ public class IntakeArm extends SubsystemBase {
     m_encoder.setPositionConversionFactor(IntakeArmConstants.kPositionFactor);
     m_encoder.setVelocityConversionFactor(IntakeArmConstants.kVelocityFactor);
 
+    SmartDashboard.putData(this);
   }
 
   /**
