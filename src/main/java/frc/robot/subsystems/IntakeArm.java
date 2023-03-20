@@ -147,6 +147,7 @@ public class IntakeArm extends SubsystemBase {
     // Display the current Arm Position on Smart Dashboard
     double curPos = m_encoder.getPosition();
     SmartDashboard.putNumber("Arm Position", curPos);
+    SmartDashboard.putBoolean("Is Arm in Safe Position? ", !armIsNotsafe());
   }
 
   @Override
