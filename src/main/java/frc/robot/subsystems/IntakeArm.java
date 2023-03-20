@@ -9,28 +9,55 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.CAN_IDs;
 import frc.robot.Constants.IntakeArmConstants;
 
 public class IntakeArm extends SubsystemBase {
-  private CANSparkMax m_motor;
+  private CANSparkMax m_motorLeft, m_motorRight;
   private RelativeEncoder m_encoder;
 
   /** Creates a new ExampleSubsystem. */
   public IntakeArm() {
-    m_motor = new CANSparkMax(CAN_IDs.intakeArm, MotorType.kBrushless);
-    m_motor.setInverted(IntakeArmConstants.kArmInverted);
-    m_motor.setIdleMode(IdleMode.kBrake);
-    m_motor.setSmartCurrentLimit(IntakeArmConstants.kCurrentLimit);
-    m_encoder = m_motor.getEncoder();
+    m_motorLeft = new CANSparkMax(CAN_IDs.intakeArmLeft, MotorType.kBrushless);
+    m_motorLeft.setInverted(IntakeArmConstants.kMotorLeftInverted);
+    m_motorLeft.setIdleMode(IdleMode.kBrake);
+    m_motorLeft.setSmartCurrentLimit(IntakeArmConstants.kCurrentLimit);
+    m_motorLeft.burnFlash();
+
+    m_motorRight = new CANSparkMax(CAN_IDs.intakeArmRight, MotorType.kBrushless);
+    m_motorRight.setIdleMode(IdleMode.kBrake);
+    m_motorRight.setSmartCurrentLimit(IntakeArmConstants.kCurrentLimit);
+    m_motorRight.follow(m_motorLeft, IntakeArmConstants.kMotorRightInverted);
+    m_motorRight.burnFlash();
+
+    m_encoder = m_motorLeft.getEncoder();
     m_encoder.setPositionConversionFactor(IntakeArmConstants.kPositionFactor);
     m_encoder.setVelocityConversionFactor(IntakeArmConstants.kVelocityFactor);
+    // The starting position is set as 0 in the constructor.
+    // This should be done only once for the Arm!
+    m_encoder.setPosition(0);
 
     SmartDashboard.putData(this);
+  }
+
+  private double getCurAngle() {
+    return m_encoder.getPosition();
+  }
+
+  private boolean armIsAtAngle(double armRadians) {
+    return (Math.abs(getCurAngle() - armRadians) < IntakeArmConstants.kToleranceRadians);
+  }
+
+  private boolean armIsBelowAngle(double armRadians) {
+    return (getCurAngle() <= armRadians);
+  }
+
+  private boolean armIsAboveAngle(double armRadians) {
+    return (getCurAngle() >= armRadians);
   }
 
   /**
@@ -38,20 +65,31 @@ public class IntakeArm extends SubsystemBase {
    *
    * @return a command
    */
-  public CommandBase rotateToAngleClockwise(double armDegrees) {
+  public CommandBase rotateToAngleClockwise(double armRadians) {
     // Inline construction of command goes here.
-    // Subsystem::RunOnce implicitly requires `this` subsystem.
-    return this.runOnce(() -> m_motor.set(IntakeArmConstants.kArmUpSpeed))
-                .until(() -> m_encoder.getPosition() >= Units.degreesToRadians(armDegrees) || this.armIsUnsafe())
-                .finallyDo((interrupted) -> m_motor.set(0.0))
-                .withName("Rotate Up To Angle");
+    // Subsystem::run implicitly requires `this` subsystem.
+    return this.run(() -> m_motorLeft.set(IntakeArmConstants.kArmUpSpeed))
+                .unless(() -> armIsAboveAngle(armRadians)) // Arm is already above the given angle
+                .until(() -> armIsAtAngle(armRadians) || armIsAboveAngle(armRadians) || armIsNotsafe())
+                .finallyDo((interrupted) -> stop())
+                .withName("Rotate Up (Clockwise) To Angle");
   }
 
-  public CommandBase rotateToAngleCounterClockwise(double armDegrees) {
-    return this.runOnce(() -> m_motor.set(IntakeArmConstants.kArmDownSpeed))
-              .until(() -> m_encoder.getPosition() <= Units.degreesToRadians(armDegrees) || this.armIsUnsafe())
-              .finallyDo((interrupted) -> m_motor.set(0.0))
-              .withName("Rotate Down to Angle");
+  public CommandBase rotateToAngleCounterClockwise(double armRadians) {
+    return this.run(() -> m_motorLeft.set(IntakeArmConstants.kArmDownSpeed))
+                .unless(() -> armIsBelowAngle(armRadians)) // Arm is already below the given angle
+                .until(() -> armIsBelowAngle(armRadians) || armIsBelowAngle(armRadians) || armIsNotsafe())
+                .finallyDo((interrupted) -> stop())
+                .withName("Rotate Down (Counter Clockwise) to Angle");
+  }
+
+  public CommandBase rotateToAngle(double armRadians) {
+    return new ConditionalCommand(rotateToAngleClockwise(armRadians), 
+                                  rotateToAngleCounterClockwise(armRadians), 
+                                  () -> armIsBelowAngle(armRadians))
+                .unless(() -> armIsNotsafe())
+                .finallyDo((interrupted) -> stop())
+                .withName("rotateToAngle");
   }
 
   /**
@@ -61,9 +99,9 @@ public class IntakeArm extends SubsystemBase {
    */
   public CommandBase turnUp() {
     // Inline construction of command goes here.
-    // Subsystem::RunOnce implicitly requires `this` subsystem.
-    return this.runOnce(() -> m_motor.set(IntakeArmConstants.kArmUpSpeed))
-            .unless(() -> this.armIsUnsafe());
+    // Subsystem::runOnce implicitly requires `this` subsystem.
+    return this.runOnce(() -> m_motorLeft.set(IntakeArmConstants.kArmUpSpeed))
+            .unless(() -> this.armIsNotsafe());
   }
 
   /**
@@ -74,8 +112,12 @@ public class IntakeArm extends SubsystemBase {
   public CommandBase turnDown() {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
-    return this.runOnce(() -> m_motor.set(IntakeArmConstants.kArmDownSpeed))
-              .unless(() -> this.armIsUnsafe());
+    return this.runOnce(() -> m_motorLeft.set(IntakeArmConstants.kArmDownSpeed))
+              .unless(() -> this.armIsNotsafe());
+  }
+
+  private void stop() {
+    m_motorLeft.set(0);
   }
 
   /**
@@ -83,10 +125,10 @@ public class IntakeArm extends SubsystemBase {
    *
    * @return a command
    */
-  public CommandBase stop() {
+  public CommandBase stopCmd() {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
-    return this.runOnce(() -> m_motor.set(0.0));
+    return this.runOnce(() -> m_motorLeft.set(0.0));
   }
 
   /**
@@ -94,14 +136,9 @@ public class IntakeArm extends SubsystemBase {
    *
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
-  public boolean armIsUnsafe() {
-    // Query some boolean state, such as a digital sensor.
-    double curArmPos = m_encoder.getPosition();
-    if ((curArmPos  < IntakeArmConstants.kArmLowerLimit) ||
-      (curArmPos > IntakeArmConstants.kArmUpperLimit))
-      return true;
-    else
-      return false;
+  public boolean armIsNotsafe() {
+    return armIsBelowAngle(IntakeArmConstants.kArmLowerLimit) || 
+            armIsAboveAngle(IntakeArmConstants.kArmUpperLimit);
   }
 
   @Override
@@ -110,6 +147,7 @@ public class IntakeArm extends SubsystemBase {
     // Display the current Arm Position on Smart Dashboard
     double curPos = m_encoder.getPosition();
     SmartDashboard.putNumber("Arm Position", curPos);
+    SmartDashboard.putBoolean("Is Arm in Safe Position? ", !armIsNotsafe());
   }
 
   @Override

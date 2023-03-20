@@ -35,7 +35,7 @@ public class IntakeWheels extends SubsystemBase {
   }
 
   public CommandBase grabCone() {
-    return this.runOnce(() -> m_motor.set(IntakeWheelsConstants.kConeGrabSpeed))
+    return this.run(() -> m_motor.set(IntakeWheelsConstants.kConeGrabSpeed))
               .until(() -> m_motor.getOutputCurrent() > IntakeWheelsConstants.kCurrentWhenConeIsGrabbed)
               .withTimeout(1)
               .finallyDo((interrupted) -> m_motor.set(0))
@@ -43,14 +43,14 @@ public class IntakeWheels extends SubsystemBase {
   }
 
   public CommandBase releaseCone() {
-    return this.runOnce(() -> m_motor.set(IntakeWheelsConstants.kConeReleaseSpeed))
+    return this.run(() -> m_motor.set(IntakeWheelsConstants.kConeReleaseSpeed))
               .withTimeout(0.5)
               .finallyDo((interrupted) -> m_motor.set(0))
               .withName("ReleaseCone");
   }
 
   public CommandBase grabCube() {
-    return this.runOnce(() -> m_motor.set(IntakeWheelsConstants.kCubeGrabSpeed))
+    return this.run(() -> m_motor.set(IntakeWheelsConstants.kCubeGrabSpeed))
               .until(() -> m_motor.getOutputCurrent() > IntakeWheelsConstants.kCurrentWhenCubeIsGrabbed)
               .withTimeout(1)
               .finallyDo((interrupted) -> m_motor.set(0))
@@ -58,7 +58,7 @@ public class IntakeWheels extends SubsystemBase {
   }
 
   public CommandBase releaseCube() {
-    return this.runOnce(() -> m_motor.set(IntakeWheelsConstants.kCubeReleaseSpeed))
+    return this.run(() -> m_motor.set(IntakeWheelsConstants.kCubeReleaseSpeed))
               .withTimeout(0.5)
               .finallyDo((interrupted) -> m_motor.set(0))
               .withName("ReleaseCube");
