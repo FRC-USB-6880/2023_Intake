@@ -20,14 +20,16 @@ public final class Constants {
     public static final int driveTrain_Left2 = 12;
     public static final int driveTrain_Right1 = 13;
     public static final int driveTrain_Right2 = 14;
-    public static final int intakeWheels = 21;
-    public static final int intakeArm = 22;
-    public static final int elevatorLeft = 23;
-    public static final int elevatorRight = 24;
-    public static final int slider = 25;
+    public static final int elevatorLeft = 21;
+    public static final int elevatorRight = 22;
+    public static final int slider = 23;
+    public static final int intakeArmLeft = 26;
+    public static final int intakeArmRight = 27;
+    public static final int intakeWheels = 28;
   }
   public static class IntakeArmConstants {
-    public static final boolean kArmInverted = false;
+    public static final boolean kMotorLeftInverted = false;
+    public static final boolean kMotorRightInverted = true;
     public static final int kCurrentLimit = 40;
     // We want 1 rotations of motor = 6 degrees of arm
     // => 1 m = 6/360 a => a/m = 360/6 = 60

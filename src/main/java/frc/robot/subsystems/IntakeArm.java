@@ -9,7 +9,6 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
@@ -18,16 +17,24 @@ import frc.robot.Constants.CAN_IDs;
 import frc.robot.Constants.IntakeArmConstants;
 
 public class IntakeArm extends SubsystemBase {
-  private CANSparkMax m_motor;
+  private CANSparkMax m_motorLeft, m_motorRight;
   private RelativeEncoder m_encoder;
 
   /** Creates a new ExampleSubsystem. */
   public IntakeArm() {
-    m_motor = new CANSparkMax(CAN_IDs.intakeArm, MotorType.kBrushless);
-    m_motor.setInverted(IntakeArmConstants.kArmInverted);
-    m_motor.setIdleMode(IdleMode.kBrake);
-    m_motor.setSmartCurrentLimit(IntakeArmConstants.kCurrentLimit);
-    m_encoder = m_motor.getEncoder();
+    m_motorLeft = new CANSparkMax(CAN_IDs.intakeArmLeft, MotorType.kBrushless);
+    m_motorLeft.setInverted(IntakeArmConstants.kMotorLeftInverted);
+    m_motorLeft.setIdleMode(IdleMode.kBrake);
+    m_motorLeft.setSmartCurrentLimit(IntakeArmConstants.kCurrentLimit);
+    m_motorLeft.burnFlash();
+
+    m_motorRight = new CANSparkMax(CAN_IDs.intakeArmRight, MotorType.kBrushless);
+    m_motorRight.setIdleMode(IdleMode.kBrake);
+    m_motorRight.setSmartCurrentLimit(IntakeArmConstants.kCurrentLimit);
+    m_motorRight.follow(m_motorLeft, IntakeArmConstants.kMotorRightInverted);
+    m_motorRight.burnFlash();
+
+    m_encoder = m_motorLeft.getEncoder();
     m_encoder.setPositionConversionFactor(IntakeArmConstants.kPositionFactor);
     m_encoder.setVelocityConversionFactor(IntakeArmConstants.kVelocityFactor);
     // The starting position is set as 0 in the constructor.
@@ -61,7 +68,7 @@ public class IntakeArm extends SubsystemBase {
   public CommandBase rotateToAngleClockwise(double armRadians) {
     // Inline construction of command goes here.
     // Subsystem::run implicitly requires `this` subsystem.
-    return this.run(() -> m_motor.set(IntakeArmConstants.kArmUpSpeed))
+    return this.run(() -> m_motorLeft.set(IntakeArmConstants.kArmUpSpeed))
                 .unless(() -> armIsAboveAngle(armRadians)) // Arm is already above the given angle
                 .until(() -> armIsAtAngle(armRadians) || armIsAboveAngle(armRadians) || armIsNotsafe())
                 .finallyDo((interrupted) -> stop())
@@ -69,7 +76,7 @@ public class IntakeArm extends SubsystemBase {
   }
 
   public CommandBase rotateToAngleCounterClockwise(double armRadians) {
-    return this.run(() -> m_motor.set(IntakeArmConstants.kArmDownSpeed))
+    return this.run(() -> m_motorLeft.set(IntakeArmConstants.kArmDownSpeed))
                 .unless(() -> armIsBelowAngle(armRadians)) // Arm is already below the given angle
                 .until(() -> armIsBelowAngle(armRadians) || armIsBelowAngle(armRadians) || armIsNotsafe())
                 .finallyDo((interrupted) -> stop())
@@ -93,7 +100,7 @@ public class IntakeArm extends SubsystemBase {
   public CommandBase turnUp() {
     // Inline construction of command goes here.
     // Subsystem::runOnce implicitly requires `this` subsystem.
-    return this.runOnce(() -> m_motor.set(IntakeArmConstants.kArmUpSpeed))
+    return this.runOnce(() -> m_motorLeft.set(IntakeArmConstants.kArmUpSpeed))
             .unless(() -> this.armIsNotsafe());
   }
 
@@ -105,12 +112,12 @@ public class IntakeArm extends SubsystemBase {
   public CommandBase turnDown() {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
-    return this.runOnce(() -> m_motor.set(IntakeArmConstants.kArmDownSpeed))
+    return this.runOnce(() -> m_motorLeft.set(IntakeArmConstants.kArmDownSpeed))
               .unless(() -> this.armIsNotsafe());
   }
 
   private void stop() {
-    m_motor.set(0);
+    m_motorLeft.set(0);
   }
 
   /**
@@ -121,7 +128,7 @@ public class IntakeArm extends SubsystemBase {
   public CommandBase stopCmd() {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
-    return this.runOnce(() -> m_motor.set(0.0));
+    return this.runOnce(() -> m_motorLeft.set(0.0));
   }
 
   /**
