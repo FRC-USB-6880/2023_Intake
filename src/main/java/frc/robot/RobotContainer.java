@@ -7,6 +7,7 @@ package frc.robot;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.subsystems.IntakeArm;
 import frc.robot.subsystems.IntakeWheels;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -43,17 +44,17 @@ public class RobotContainer {
    */
   private void configureBindings() {
     // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
-    new Trigger(m_intakeArm::armIsUnsafe)
-        .onTrue(m_intakeArm.stop());
+    new Trigger(m_intakeArm::armIsNotsafe)
+        .onTrue(m_intakeArm.stopCmd());
 
     // Schedule `exampleMethodCommand` when the Xbox controller's B button is pressed,
     // cancelling on release.
     m_driverController.b()
       .whileTrue(m_intakeArm.turnUp())
-      .onFalse(m_intakeArm.stop());
+      .onFalse(m_intakeArm.stopCmd());
     m_driverController.a()
       .whileTrue(m_intakeArm.turnDown())
-      .onFalse(m_intakeArm.stop());
+      .onFalse(m_intakeArm.stopCmd());
     m_driverController.x()
       .onTrue(m_intakeWheels.grabCone());
     m_driverController.y()
@@ -68,7 +69,7 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     // An example command will be run in autonomous
     return m_intakeArm
-            .rotateToAngleClockwise(45)
+            .rotateToAngleClockwise(Units.degreesToRadians(45))
             .withTimeout(5);
   }
 }
